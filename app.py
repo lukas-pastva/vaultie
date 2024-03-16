@@ -13,7 +13,8 @@ client = hvac.Client(url=vault_addr)
 # Authenticate with Vault using the Kubernetes auth method
 def authenticate_with_vault():
     jwt_token = open('/var/run/secrets/kubernetes.io/serviceaccount/token', 'r').read().strip()
-    client.auth.kubernetes(vault_role, jwt_token)
+    # Use the correct method to login using Kubernetes authentication
+    client.auth.kubernetes.login(role=vault_role, jwt=jwt_token)
 
 authenticate_with_vault()
 
