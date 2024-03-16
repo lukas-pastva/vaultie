@@ -91,6 +91,8 @@ def store_secret():
         f"{VAULT_ADDR}/v1/kv/data/{secret_path}"
     ]
 
+    app.logger.debug(f"store_cmd: {store_cmd}")
+
     store_response = subprocess.run(store_cmd, capture_output=True, text=True)
 
     if store_response.returncode == 0:
