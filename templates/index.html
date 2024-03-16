@@ -42,14 +42,15 @@
 
 <script>
     async function loadDirectories() {
-        const response = await fetch('/list-secrets?directories_only=true'); // Adjust the URL as needed
+        const response = await fetch('/list-secrets?directories_only=true');
         if (response.ok) {
             const data = await response.json();
             const directorySelect = document.getElementById('directorySelect');
-            data.secrets.forEach(directory => {
+            // Use the correct key based on your JSON response structure
+            (data.directories || []).forEach(directory => {
                 const option = document.createElement('option');
                 option.value = directory;
-                option.textContent = directory;
+                option.textContent = directory; // Assuming you want to display the full directory path
                 directorySelect.appendChild(option);
             });
         } else {
