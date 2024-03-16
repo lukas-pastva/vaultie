@@ -4,7 +4,7 @@ WORKDIR /app
 
 COPY . /app
 
-RUN pip install --no-cache-dir flask hvac==2.1.0
+RUN pip install --no-cache-dir flask
 
 EXPOSE 5000
 
