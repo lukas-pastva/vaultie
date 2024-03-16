@@ -49,8 +49,10 @@ def store_secret():
 
 @app.route('/list-secrets', methods=['GET'])
 def list_secrets():
-    parent_path = request.args.get('parent', '')
+    # Fixed path to align with your correct URL for listing
+    parent_path = "kv/metadata/"
     app.logger.debug(f"Attempting to list secrets at path: '{parent_path}'")
+
     try:
         list_response = client.secrets.kv.v2.list_secrets(path=parent_path)
         app.logger.debug(f"Successfully listed secrets at path: '{parent_path}'. Response: {list_response}")
