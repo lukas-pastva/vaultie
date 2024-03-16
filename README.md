@@ -19,3 +19,6 @@ vault write auth/kubernetes/role/sys-saas-web-secrets \
      policies=sys-saas-web-secrets/sys-saas-web-secrets \
      ttl=6000h
 ```
+- Required ENV variables:
+  - VAULT_ADDR
+  - VAULT_ROLE
