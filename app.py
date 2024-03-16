@@ -33,10 +33,10 @@ authenticate_with_vault()
 def index():
     return render_template('index.html')
 
-def recursive_list_secrets(parent_path=''):
+def recursive_list_secrets(parent_path='', directories_only=False):
     list_cmd = f"curl -s --header \"X-Vault-Token: {VAULT_TOKEN}\" -X LIST {VAULT_ADDR}/v1/kv/metadata/{parent_path}"
     list_response = subprocess.run(list_cmd, shell=True, capture_output=True, text=True)
-    secrets = []
+    items = []
 
     if list_response.returncode == 0:
         try:
@@ -44,27 +44,32 @@ def recursive_list_secrets(parent_path=''):
             keys = response_data.get('data', {}).get('keys', [])
             for key in keys:
                 if key.endswith('/'):
-                    # It's a folder, recurse into it
-                    secrets.extend(recursive_list_secrets(f"{parent_path}{key}"))
-                else:
-                    # It's a secret, add its path to the list
-                    secrets.append(f"{parent_path}{key}")
+                    # It's a folder
+                    if directories_only:
+                        # If only directories are needed, add to the list
+                        items.append(f"{parent_path}{key}")
+                    # Recurse into the directory
+                    items.extend(recursive_list_secrets(f"{parent_path}{key}", directories_only))
+                elif not directories_only:
+                    # It's a secret, and if secrets are needed, add its path to the list
+                    items.append(f"{parent_path}{key}")
         except json.JSONDecodeError as e:
             app.logger.error(f"JSON parsing error: {str(e)}")
     else:
-        app.logger.error(f"Failed to list secrets at path: '{parent_path}'. Response: {list_response.stderr}")
+        app.logger.error(f"Failed to list items at path: '{parent_path}'. Response: {list_response.stderr}")
 
-    return secrets
+    return items
 
 @app.route('/list-secrets', methods=['GET'])
 def list_secrets():
+    directories_only = request.args.get('directories_only', 'false').lower() == 'true'
     parent_path = request.args.get('parent', '')
-    app.logger.debug(f"Attempting to list secrets at path: '{parent_path}' with token prefix: {VAULT_TOKEN[:4]}****")
+    app.logger.debug(f"Attempting to list items at path: '{parent_path}' with token prefix: {VAULT_TOKEN[:4]}****, directories only: {directories_only}")
     try:
-        secrets = recursive_list_secrets(parent_path)
-        return jsonify({"secrets": secrets}), 200
+        items = recursive_list_secrets(parent_path, directories_only)
+        return jsonify({"directories" if directories_only else "secrets": items}), 200
     except Exception as e:
-        app.logger.error(f"Error listing secrets recursively at path: '{parent_path}'. Exception: {e}")
+        app.logger.error(f"Error listing items recursively at path: '{parent_path}'. Exception: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 if __name__ == '__main__':
