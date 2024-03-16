@@ -4,7 +4,11 @@ WORKDIR /app
 
 COPY . /app
 
-RUN pip install --no-cache-dir flask
+# Install Vim and other dependencies
+RUN apt-get update && \
+    apt-get install -y vim && \
+    rm -rf /var/lib/apt/lists/* && \
+    pip install --no-cache-dir flask
 
 EXPOSE 5000
 
