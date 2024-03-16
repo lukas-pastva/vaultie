@@ -59,18 +59,15 @@
     }
 
     async function storeSecret() {
-        const directorySelect = document.getElementById('directorySelect');
-        const directory = directorySelect.value;
+        const directory = document.getElementById('directorySelect').value;
         const key = document.getElementById('newSecretKey').value.trim();
         const value = document.getElementById('newSecretValue').value.trim();
 
-        // Ensure a directory is selected
         if (!directory || directory === "") {
             alert('Please select a directory.');
             return;
         }
 
-        // Ensure both key and value are provided
         if (!key || !value) {
             alert('Please fill in both the secret key and value.');
             return;
@@ -78,37 +75,30 @@
 
         let parsedValue;
         try {
-            // Attempt to parse the value as JSON to ensure it's valid
-            parsedValue = JSON.parse(value);
+            parsedValue = JSON.parse(value); // Ensure the value is valid JSON
         } catch (e) {
             alert('The secret value must be a valid JSON object.');
             return;
         }
 
-        // Construct the payload for the Vault API
-        // For KV Version 2, the secret data should be nested under a "data" key
         const payload = {
-            path: `${directory}${key}`,
-            data: parsedValue // Ensure this matches the expected structure for your Vault setup
+            path: `${directory}${key}`, // Ensure this is the correct path format for your Vault setup
+            data: parsedValue
         };
 
-        // For KV Version 2, the actual secret data must be nested again within a "data" field
-        const apiPayload = { data: payload.data };
-
         try {
-            const response = await fetch(`/store-secret`, {
+            const response = await fetch('/store-secret', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(apiPayload), // Send the correctly structured payload
+                body: JSON.stringify(payload),
             });
 
             if (response.ok) {
                 alert('Secret stored successfully');
                 // Optionally, clear the form or perform other success actions
             } else {
-                // If the response is not ok, extract and show the error message
                 const errorMsg = await response.text();
                 console.error('Failed to store secret:', errorMsg);
                 alert('Failed to store secret. Check the console for more information.');

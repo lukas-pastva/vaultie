@@ -74,15 +74,15 @@ def list_secrets():
 
 @app.route('/store-secret', methods=['POST'])
 def store_secret():
-    # Extract the path and data from the request body
     req_data = request.get_json()
     secret_path = req_data.get('path')
-    secret_data = req_data.get('data')  # This is already a JSON object
+    secret_data = req_data.get('data')
 
-    # For KV v2, the data needs to be nested under a "data" key
+    if not secret_path or not secret_data:
+        return jsonify({"success": False, "error": "Missing path or data"}), 400
+
     vault_payload = json.dumps({"data": secret_data})
 
-    # Construct the curl command
     store_cmd = [
         "curl", "-s",
         "--header", f"X-Vault-Token: {VAULT_TOKEN}",
@@ -91,17 +91,10 @@ def store_secret():
         f"{VAULT_ADDR}/v1/kv/data/{secret_path}"
     ]
 
-    # Execute the curl command
     store_response = subprocess.run(store_cmd, capture_output=True, text=True)
 
     if store_response.returncode == 0:
-        try:
-            # Parse the JSON response from Vault
-            response_data = json.loads(store_response.stdout)
-            return jsonify({"success": True, "data": response_data}), 200
-        except json.JSONDecodeError as e:
-            app.logger.error(f"JSON parsing error: {str(e)}")
-            return jsonify({"success": False, "error": "Failed to parse response from Vault"}), 500
+        return jsonify({"success": True}), 200
     else:
         app.logger.error(f"Failed to store secret at path: '{secret_path}'. Response: {store_response.stderr}")
         return jsonify({"success": False, "error": store_response.stderr}), 500
