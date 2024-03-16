@@ -2,6 +2,7 @@ import os
 import subprocess
 from flask import Flask, request, jsonify, render_template
 import logging
+import json
 
 app = Flask(__name__)
 logging.basicConfig(level=logging.DEBUG)
@@ -24,7 +25,6 @@ def authenticate_with_vault():
         VAULT_TOKEN = subprocess.run("echo '{}' | jq -r '.auth.client_token'".format(login_response.stdout), shell=True, capture_output=True, text=True).stdout.strip()
         app.logger.debug("Vault authentication successful.")
     else:
-        # Enhanced logging
         app.logger.error(f"Vault authentication failed. Response: {login_response.stdout}, Error: {login_response.stderr}")
 
 authenticate_with_vault()
@@ -41,15 +41,22 @@ def list_secrets():
         list_cmd = f"curl -s --header \"X-Vault-Token: {VAULT_TOKEN}\" {VAULT_ADDR}/v1/secret/metadata/{parent_path}?list=true"
         list_response = subprocess.run(list_cmd, shell=True, capture_output=True, text=True)
         if list_response.returncode == 0:
-            secrets_list = subprocess.run(f"echo '{list_response.stdout}' | jq .", shell=True, capture_output=True, text=True).stdout
-            app.logger.debug(f"Successfully listed secrets at path: '{parent_path}'. Response: {secrets_list}")
-            return jsonify(secrets_list), 200
+            try:
+                # Attempt to parse the JSON response
+                secrets_list = json.loads(list_response.stdout)
+                app.logger.debug(f"Successfully listed secrets at path: '{parent_path}'. Response: {secrets_list}")
+                return jsonify(secrets_list), 200
+            except json.JSONDecodeError:
+                # Log and handle JSON parsing error
+                app.logger.error(f"Failed to parse JSON response. Response: {list_response.stdout}")
+                return jsonify({"success": False, "error": "Failed to parse JSON response."}), 500
         else:
-            raise Exception("Failed to list secrets")
+            # Log stderr when the command fails
+            app.logger.error(f"Failed to list secrets. Response: {list_response.stdout}, Error: {list_response.stderr}")
+            return jsonify({"success": False, "error": list_response.stderr}), 500
     except Exception as e:
-        app.logger.error(f"Error listing secrets at path: '{parent_path}'. Error: {e}")
+        app.logger.error(f"Error listing secrets at path: '{parent_path}'. Exception: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
-
