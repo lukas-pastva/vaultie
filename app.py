@@ -1,32 +1,37 @@
 import os
+import requests
 from flask import Flask, request, jsonify, render_template
 import hvac
 import logging
 
 app = Flask(__name__)
-
-# Set up basic configuration for logging
 logging.basicConfig(level=logging.DEBUG)
 
 # Environment variables
-vault_addr = os.environ['VAULT_ADDR']
-vault_role = os.environ['VAULT_ROLE']
+VAULT_ADDR = os.environ['VAULT_ADDR']
+VAULT_ROLE = os.environ['VAULT_ROLE']
+VAULT_TOKEN = None  # This will store the Vault token globally
 
-client = hvac.Client(url=vault_addr)
-
-# Authenticate with Vault using the Kubernetes auth method
 def authenticate_with_vault():
-    with open('/var/run/secrets/kubernetes.io/serviceaccount/token', 'r') as token_file:
+    global VAULT_TOKEN
+    jwt_token_path = '/var/run/secrets/kubernetes.io/serviceaccount/token'
+    with open(jwt_token_path, 'r') as token_file:
         jwt_token = token_file.read().strip()
-    # Log the token for debugging purposes
-    app.logger.debug(f"JWT Token: {jwt_token}")
 
-    try:
-        client.auth.kubernetes.login(role=vault_role, jwt=jwt_token)
-    except Exception as e:
-        app.logger.error(f"Vault authentication failed: {e}")
+    data = {"jwt": jwt_token, "role": VAULT_ROLE}
+    headers = {'Content-Type': 'application/json'}
+    login_url = f"{VAULT_ADDR}/v1/auth/kubernetes/login"
+    response = requests.post(login_url, json=data, headers=headers)
+    if response.ok:
+        VAULT_TOKEN = response.json()['auth']['client_token']
+        app.logger.debug("Vault authentication successful.")
+    else:
+        app.logger.error("Vault authentication failed.")
 
 authenticate_with_vault()
+
+# Initialize HVAC client with the token
+client = hvac.Client(url=VAULT_ADDR, token=VAULT_TOKEN)
 
 @app.route('/')
 def index():
@@ -45,14 +50,13 @@ def store_secret():
 @app.route('/list-secrets', methods=['GET'])
 def list_secrets():
     parent_path = request.args.get('parent', '')
-    app.logger.debug(f"Attempting to list secrets at path: '{parent_path}'")  # Log the attempted path
-
+    app.logger.debug(f"Attempting to list secrets at path: '{parent_path}'")
     try:
         list_response = client.secrets.kv.v2.list_secrets(path=parent_path)
-        app.logger.debug(f"Successfully listed secrets at path: '{parent_path}'. Response: {list_response}")  # Log successful listing
+        app.logger.debug(f"Successfully listed secrets at path: '{parent_path}'. Response: {list_response}")
         return jsonify(list_response['data']), 200
     except Exception as e:
-        app.logger.error(f"Error listing secrets at path: '{parent_path}'. Error: {e}")  # Log errors
+        app.logger.error(f"Error listing secrets at path: '{parent_path}'. Error: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 if __name__ == '__main__':
