@@ -84,7 +84,7 @@ def store_secret():
 
     # Construct the curl command to store the secret in Vault
     store_cmd = f"curl -s --header 'X-Vault-Token: {VAULT_TOKEN}' --request POST --data '{secret_data_json}' {VAULT_ADDR}/v1/kv/data/{secret_path}"
-
+    app.logger.debug(f"Storing secret: '{store_cmd}'")
     # Execute the curl command
     store_response = subprocess.run(store_cmd, shell=True, capture_output=True, text=True)
 
