@@ -19,12 +19,13 @@ def authenticate_with_vault():
 
     login_cmd = f"curl -s --request POST --data '{{\"jwt\": \"{jwt_token}\", \"role\": \"{VAULT_ROLE}\"}}' {VAULT_ADDR}/v1/auth/kubernetes/login"
     login_response = subprocess.run(login_cmd, shell=True, capture_output=True, text=True)
+
     if login_response.returncode == 0 and "client_token" in login_response.stdout:
         VAULT_TOKEN = subprocess.run("echo '{}' | jq -r '.auth.client_token'".format(login_response.stdout), shell=True, capture_output=True, text=True).stdout.strip()
         app.logger.debug("Vault authentication successful.")
     else:
-        # Log the error message along with the response from Vault
-        app.logger.error(f"Vault authentication failed. Response: {login_response.stdout}")
+        # Enhanced logging
+        app.logger.error(f"Vault authentication failed. Response: {login_response.stdout}, Error: {login_response.stderr}")
 
 authenticate_with_vault()
 
