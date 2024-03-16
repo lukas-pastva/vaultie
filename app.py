@@ -38,7 +38,7 @@ def list_secrets():
     parent_path = request.args.get('parent', '')
     app.logger.debug(f"Attempting to list secrets at path: '{parent_path}' with token prefix: {VAULT_TOKEN[:4]}****")  # Demonstrative logging
     try:
-        list_cmd = f"curl -s --header \"X-Vault-Token: {VAULT_TOKEN}\" {VAULT_ADDR}/v1/kv/metadata/{parent_path}"
+        list_cmd = f"curl -s --header \"X-Vault-Token: {VAULT_TOKEN}\" -X LIST {VAULT_ADDR}/v1/kv/metadata/{parent_path}"
         app.logger.debug(f"Executing command: {list_cmd}")  # Log the command; ensure sensitive data is not logged in production
         list_response = subprocess.run(list_cmd, shell=True, capture_output=True, text=True)
         if list_response.returncode == 0:
