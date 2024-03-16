@@ -61,22 +61,33 @@
     async function storeSecret() {
         const directory = document.getElementById('directorySelect').value;
         const key = document.getElementById('newSecretKey').value;
-        const value = document.getElementById('newSecretValue').value;
+        let value = document.getElementById('newSecretValue').value;
+
+        // Attempt to parse the value as JSON to ensure it's valid
+        try {
+            value = JSON.stringify(JSON.parse(value));
+        } catch (e) {
+            alert('The secret value must be a valid JSON object.');
+            return;
+        }
 
         const response = await fetch('/store-secret', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({path: `${directory}${key}`, data: JSON.parse(value)}),
+            body: JSON.stringify({path: `${directory}${key}`, data: value}),
         });
 
         if (response.ok) {
             alert('Secret stored successfully');
         } else {
+            // If the response is not ok, log the response text for debugging
+            console.error('Failed to store secret:', await response.text());
             alert('Failed to store secret');
         }
     }
+
 
     document.addEventListener('DOMContentLoaded', loadDirectories);
 </script>
