@@ -45,10 +45,14 @@ def store_secret():
 @app.route('/list-secrets', methods=['GET'])
 def list_secrets():
     parent_path = request.args.get('parent', '')
+    app.logger.debug(f"Attempting to list secrets at path: '{parent_path}'")  # Log the attempted path
+
     try:
         list_response = client.secrets.kv.v2.list_secrets(path=parent_path)
+        app.logger.debug(f"Successfully listed secrets at path: '{parent_path}'. Response: {list_response}")  # Log successful listing
         return jsonify(list_response['data']), 200
     except Exception as e:
+        app.logger.error(f"Error listing secrets at path: '{parent_path}'. Error: {e}")  # Log errors
         return jsonify({"success": False, "error": str(e)}), 500
 
 if __name__ == '__main__':
