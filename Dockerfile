@@ -2,10 +2,12 @@ FROM python:3.8-slim
 
 WORKDIR /app
 
-COPY requirements.txt .
+COPY . /app
 
-RUN pip install -r requirements.txt
+RUN pip install --no-cache-dir flask hvac==2.1.0
 
-COPY . .
+EXPOSE 5000
+
+ENV FLASK_APP=app.py
 
 CMD ["flask", "run", "--host=0.0.0.0"]
