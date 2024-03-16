@@ -1,2 +1,2 @@
-Flask==2.0.1
-hvac==0.10.5
+Flask
+hvac
