@@ -35,7 +35,7 @@
             <!-- Directories will be populated here -->
         </select>
         <input type="text" id="newSecretKey" placeholder="Secret Key">
-        <textarea id="newSecretValue" placeholder="Secret Value"></textarea>
+        <textarea id="newSecretValue" placeholder="Secret Value">{"value": "INSERT_VALUE_HERE"}</textarea>
         <button onclick="storeSecret()">Store Secret</button>
     </div>
 </div>
@@ -63,6 +63,12 @@
         const key = document.getElementById('newSecretKey').value;
         let value = document.getElementById('newSecretValue').value;
 
+        // Check if the value has been changed from the default
+        if (value.trim() === '{"value": "INSERT_VALUE_HERE"}') {
+            alert('Please replace INSERT_VALUE_HERE with your actual secret value.');
+            return;
+        }
+
         // Attempt to parse the value as JSON to ensure it's valid
         try {
             value = JSON.stringify(JSON.parse(value));
@@ -76,11 +82,12 @@
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({path: `${directory}${key}`, data: value}),
+            body: JSON.stringify({path: `${directory}${key}`, data: JSON.parse(value)}),
         });
 
         if (response.ok) {
             alert('Secret stored successfully');
+            // Optionally clear the form or redirect the user
         } else {
             // If the response is not ok, log the response text for debugging
             console.error('Failed to store secret:', await response.text());

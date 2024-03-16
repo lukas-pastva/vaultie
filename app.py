@@ -72,6 +72,35 @@ def list_secrets():
         app.logger.error(f"Error listing items recursively at path: '{parent_path}'. Exception: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
+@app.route('/store-secret', methods=['POST'])
+def store_secret():
+    # Extract the path and data from the request body
+    request_data = request.get_json()
+    secret_path = request_data.get('path')
+    secret_data = request_data.get('data')
+
+    # Convert the secret data back to a JSON string for the curl command
+    secret_data_json = json.dumps(secret_data)
+
+    # Construct the curl command to store the secret in Vault
+    store_cmd = f"curl -s --header 'X-Vault-Token: {VAULT_TOKEN}' --request POST --data '{secret_data_json}' {VAULT_ADDR}/v1/kv/data/{secret_path}"
+
+    # Execute the curl command
+    store_response = subprocess.run(store_cmd, shell=True, capture_output=True, text=True)
+
+    if store_response.returncode == 0:
+        try:
+            # Attempt to parse the JSON response from Vault
+            response_data = json.loads(store_response.stdout)
+            # Check for success indicators in the response data if necessary
+            return jsonify({"success": True, "data": response_data}), 200
+        except json.JSONDecodeError as e:
+            app.logger.error(f"JSON parsing error: {str(e)}")
+            return jsonify({"success": False, "error": "Failed to parse response from Vault"}), 500
+    else:
+        app.logger.error(f"Failed to store secret at path: '{secret_path}'. Response: {store_response.stderr}")
+        return jsonify({"success": False, "error": store_response.stderr}), 500
+
 if __name__ == '__main__':
     app.run(debug=True)
 
