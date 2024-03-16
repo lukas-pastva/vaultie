@@ -10,7 +10,7 @@ logging.basicConfig(level=logging.DEBUG)
 # Environment variables
 VAULT_ADDR = os.environ['VAULT_ADDR']
 VAULT_ROLE = os.environ['VAULT_ROLE']
-VAULT_TOKEN = None  # This will store the Vault token globally
+VAULT_TOKEN = None
 
 def authenticate_with_vault():
     global VAULT_TOKEN
@@ -38,7 +38,7 @@ def list_secrets():
     parent_path = request.args.get('parent', '')
     app.logger.debug(f"Attempting to list secrets at path: '{parent_path}'")
     try:
-        list_cmd = f"curl -s --header \"X-Vault-Token: {VAULT_TOKEN}\" {VAULT_ADDR}/v1/secret/metadata/{parent_path}?list=true"
+        list_cmd = f"curl -s --header \"X-Vault-Token: {VAULT_TOKEN}\" {VAULT_ADDR}/v1/kv/metadata/{parent_path}"
         list_response = subprocess.run(list_cmd, shell=True, capture_output=True, text=True)
         if list_response.returncode == 0:
             try:
