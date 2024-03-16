@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Vault Secrets Manager</title>
+    <script>
+        async function storeSecret() {
+            const path = document.getElementById('path').value;
+            const data = document.getElementById('data').value;
+            const response = await fetch('/store-secret', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({path, data: JSON.parse(data)}),
+            });
+
+            if (response.ok) {
+                alert('Secret stored successfully');
+            } else {
+                alert('Failed to store secret');
+            }
+        }
+
+        async function listSecrets(parentPath = '') {
+            const response = await fetch(`/list-secrets?parent=${parentPath}`);
+            if (response.ok) {
+                const data = await response.json();
+                // Simplified: Log to console. Implement tree view as needed.
+                console.log(data);
+            } else {
+                alert('Failed to list secrets');
+            }
+        }
+    </script>
+</head>
+<body>
+<h1>Vault Secrets Manager</h1>
+<div>
+    <h2>Store a Secret</h2>
+    <input type="text" id="path" placeholder="Path" />
+    <textarea id="data" placeholder='{"key":"value"}'></textarea>
+    <button onclick="storeSecret()">Store Secret</button>
+</div>
+<div>
+    <h2>List Secrets</h2>
+    <button onclick="listSecrets()">List Root Secrets</button>
+    <!-- Implement additional UI for navigating tree structure -->
+</div>
+</body>
+</html>
