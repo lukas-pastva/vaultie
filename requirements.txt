@@ -1,2 +1,2 @@
-Flask
-hvac
+Flask==3.0.x
+hvac==2.1.0
