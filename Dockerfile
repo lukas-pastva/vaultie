@@ -6,7 +6,7 @@ COPY . /app
 
 # Install Vim and other dependencies
 RUN apt-get update && \
-    apt-get install -y vim && \
+    apt-get install -y curl vim && \
     rm -rf /var/lib/apt/lists/* && \
     pip install --no-cache-dir flask
 
