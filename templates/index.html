@@ -59,39 +59,63 @@
     }
 
     async function storeSecret() {
-        const directory = document.getElementById('directorySelect').value;
-        const key = document.getElementById('newSecretKey').value;
-        let value = document.getElementById('newSecretValue').value;
+        const directorySelect = document.getElementById('directorySelect');
+        const directory = directorySelect.value;
+        const key = document.getElementById('newSecretKey').value.trim();
+        const value = document.getElementById('newSecretValue').value.trim();
 
-        // Check if the value has been changed from the default
-        if (value.trim() === '{"value": "INSERT_VALUE_HERE"}') {
-            alert('Please replace INSERT_VALUE_HERE with your actual secret value.');
+        // Ensure a directory is selected
+        if (!directory || directory === "") {
+            alert('Please select a directory.');
             return;
         }
 
-        // Attempt to parse the value as JSON to ensure it's valid
+        // Ensure both key and value are provided
+        if (!key || !value) {
+            alert('Please fill in both the secret key and value.');
+            return;
+        }
+
+        let parsedValue;
         try {
-            value = JSON.stringify(JSON.parse(value));
+            // Attempt to parse the value as JSON to ensure it's valid
+            parsedValue = JSON.parse(value);
         } catch (e) {
             alert('The secret value must be a valid JSON object.');
             return;
         }
 
-        const response = await fetch('/store-secret', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({path: `${directory}${key}`, data: JSON.parse(value)}),
-        });
+        // Construct the payload for the Vault API
+        // For KV Version 2, the secret data should be nested under a "data" key
+        const payload = {
+            path: `${directory}${key}`,
+            data: parsedValue // Ensure this matches the expected structure for your Vault setup
+        };
 
-        if (response.ok) {
-            alert('Secret stored successfully');
-            // Optionally clear the form or redirect the user
-        } else {
-            // If the response is not ok, log the response text for debugging
-            console.error('Failed to store secret:', await response.text());
-            alert('Failed to store secret');
+        // For KV Version 2, the actual secret data must be nested again within a "data" field
+        const apiPayload = { data: payload.data };
+
+        try {
+            const response = await fetch(`/store-secret`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(apiPayload), // Send the correctly structured payload
+            });
+
+            if (response.ok) {
+                alert('Secret stored successfully');
+                // Optionally, clear the form or perform other success actions
+            } else {
+                // If the response is not ok, extract and show the error message
+                const errorMsg = await response.text();
+                console.error('Failed to store secret:', errorMsg);
+                alert('Failed to store secret. Check the console for more information.');
+            }
+        } catch (error) {
+            console.error('Error storing secret:', error);
+            alert('An error occurred while storing the secret.');
         }
     }
 
