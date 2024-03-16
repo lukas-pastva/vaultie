@@ -3,6 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <title>Vault Secrets Manager</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        div {
+            margin-bottom: 20px;
+        }
+        input, textarea, select {
+            margin-bottom: 10px;
+            display: block;
+        }
+        button {
+            cursor: pointer;
+        }
+    </style>
     <script>
         async function storeSecret() {
             const path = document.getElementById('path').value;
@@ -17,6 +33,7 @@
 
             if (response.ok) {
                 alert('Secret stored successfully');
+                listSecrets(); // Refresh the secrets list
             } else {
                 alert('Failed to store secret');
             }
@@ -26,12 +43,26 @@
             const response = await fetch(`/list-secrets?parent=${parentPath}`);
             if (response.ok) {
                 const data = await response.json();
-                // Simplified: Log to console. Implement tree view as needed.
-                console.log(data);
+                updateSecretsDropdown(data.keys || []); // Assuming 'keys' contains the paths
             } else {
                 alert('Failed to list secrets');
             }
         }
+
+        function updateSecretsDropdown(paths) {
+            const select = document.getElementById('secretsDropdown');
+            select.innerHTML = ''; // Clear existing options
+            paths.forEach(path => {
+                const option = document.createElement('option');
+                option.value = path;
+                option.textContent = path;
+                select.appendChild(option);
+            });
+        }
+
+        window.onload = () => {
+            listSecrets(); // Initial load of root secrets
+        };
     </script>
 </head>
 <body>
@@ -44,8 +75,9 @@
 </div>
 <div>
     <h2>List Secrets</h2>
-    <button onclick="listSecrets()">List Root Secrets</button>
-    <!-- Implement additional UI for navigating tree structure -->
+    <select id="secretsDropdown" onchange="listSecrets(this.value)">
+        <option>Select a secret path</option>
+    </select>
 </div>
 </body>
 </html>
