@@ -74,31 +74,41 @@
     }
 
     async function storeSecret() {
-        const directory = document.getElementById('directorySelect').value;
+        const directorySelect = document.getElementById('directorySelect');
+        const directory = directorySelect.value;
         const key = document.getElementById('newSecretKey').value.trim();
-        const value = document.getElementById('newSecretValue').value.trim();
+        let value = document.getElementById('newSecretValue').value.trim();
 
+        // Ensure a directory is selected
         if (!directory || directory === "") {
             alert('Please select a directory.');
             return;
         }
 
-        if (!key || !value) {
-            alert('Please fill in both the secret key and value.');
+        // Ensure the key is provided
+        if (!key) {
+            alert('Please fill in the secret key.');
             return;
         }
 
-        let parsedValue;
+        // Check if the secret value has been changed from the default placeholder
+        if (value === '{"value": "INSERT_VALUE_HERE"}' || !value) {
+            alert('Please replace INSERT_VALUE_HERE with your actual secret value or fill in the secret value.');
+            return;
+        }
+
+        // Attempt to parse the value as JSON to ensure it's valid
         try {
-            parsedValue = JSON.parse(value); // Ensure the value is valid JSON
+            value = JSON.stringify(JSON.parse(value));
         } catch (e) {
             alert('The secret value must be a valid JSON object.');
             return;
         }
 
+        // Construct the payload
         const payload = {
-            path: `${directory}${key}`, // Ensure this is the correct path format for your Vault setup
-            data: parsedValue
+            path: `${directory}${key}`, // Adjust based on your API endpoint's expected format
+            data: JSON.parse(value) // Parse the stringified JSON to convert it back into an object
         };
 
         try {
@@ -114,6 +124,7 @@
                 alert('Secret stored successfully');
                 // Optionally, clear the form or perform other success actions
             } else {
+                // If the response is not ok, extract and show the error message
                 const errorMsg = await response.text();
                 console.error('Failed to store secret:', errorMsg);
                 alert('Failed to store secret. Check the console for more information.');
@@ -123,6 +134,7 @@
             alert('An error occurred while storing the secret.');
         }
     }
+
 
 
     document.addEventListener('DOMContentLoaded', loadDirectories);
