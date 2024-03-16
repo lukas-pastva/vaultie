@@ -1,20 +1,30 @@
 import os
 from flask import Flask, request, jsonify, render_template
 import hvac
+import logging
 
 app = Flask(__name__)
 
+# Set up basic configuration for logging
+logging.basicConfig(level=logging.DEBUG)
+
 # Environment variables
 vault_addr = os.environ['VAULT_ADDR']
-vault_role = os.environ['VAULT_ROLE']  # Read the Vault role from environment variable
+vault_role = os.environ['VAULT_ROLE']
 
 client = hvac.Client(url=vault_addr)
 
 # Authenticate with Vault using the Kubernetes auth method
 def authenticate_with_vault():
-    jwt_token = open('/var/run/secrets/kubernetes.io/serviceaccount/token', 'r').read().strip()
-    # Use the correct method to login using Kubernetes authentication
-    client.auth.kubernetes.login(role=vault_role, jwt=jwt_token)
+    with open('/var/run/secrets/kubernetes.io/serviceaccount/token', 'r') as token_file:
+        jwt_token = token_file.read().strip()
+    # Log the token for debugging purposes
+    app.logger.debug(f"JWT Token: {jwt_token}")
+
+    try:
+        client.auth.kubernetes.login(role=vault_role, jwt=jwt_token)
+    except Exception as e:
+        app.logger.error(f"Vault authentication failed: {e}")
 
 authenticate_with_vault()
 
