@@ -1,5 +1,5 @@
 # vaultie
-- Web that will let you insrt secrets into hashicorp vault.
+- Web that will let you insert secrets into hashicorp vault.
 - The reason forhaving this is, that user is not havinyg any Vault token, and this web lets him only ability to inserts secrets, not udpate or delete.
 - Required to set policy for Vault
 ```bash
